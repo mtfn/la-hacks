@@ -172,22 +172,56 @@
 // //   );
 // // }
 
-
+import {  Navbar,   NavbarBrand,   NavbarContent,   NavbarItem,   NavbarMenuToggle,  NavbarMenu,  NavbarMenuItem, Button, Link} from "@nextui-org/react";
 import Image from "next/image";
-import {Navbar}  from "../../components/navbar"
+// import {Navbar}  from "../../components/navbar"
 import { Nabla } from "next/font/google";
+// import Link from "next/link"
+// import Button from "next/button"
 
 export default function Home() {
   return (
     <>
-    <Navbar />
-    <div style={{display:"block",width: "100vw", backgroundColor: "white", height: "90vh"}}>
+    <Navbar style={{backgroundColor:"white"}}>
+      <NavbarBrand>
+        {/* <AcmeLogo /> */}
+        <p className="font-bold text-inherit">ACME</p>
+      </NavbarBrand>
+      <NavbarContent className="hidden sm:flex gap-4" justify="center">
+        <NavbarItem>
+          <Link color="foreground" href="#">
+            Features
+          </Link>
+        </NavbarItem>
+        <NavbarItem isActive>
+          <Link href="#" aria-current="page">
+            Customers
+          </Link>
+        </NavbarItem>
+        <NavbarItem>
+          <Link color="foreground" href="#">
+            Integrations
+          </Link>
+        </NavbarItem>
+      </NavbarContent>
+      <NavbarContent justify="end">
+        <NavbarItem className="hidden lg:flex">
+          <Link href="#">Login</Link>
+        </NavbarItem>
+        <NavbarItem>
+          <Button as={Link} color="primary" href="#" variant="flat">
+            Sign Up
+          </Button>
+        </NavbarItem>
+      </NavbarContent>
+    </Navbar>
+    {/* <div style={{display:"block",width: "100vw", backgroundColor: "white", height: "90vh"}}>
         <h1 style={{paddingTop:"20vh",textAlign:"center",color:"black",fontSize:"4rem"}}>Un-GateKeep</h1>
-        <h2 style={{textAlign:"center",color:"black",fontSize:"3rem"}}>Never Get Bitched Again</h2>
-     
+        <h2 style={{textAlign:"center",color:"black",fontSize:"3rem"}}>Never Get Bitched Again</h2>  
+    </div> */}
+    <div style={{width:"100%"}}>
+      <h1>Hi!</h1>
     </div>
-    </>
-
-    
+    </> 
   )
 }
