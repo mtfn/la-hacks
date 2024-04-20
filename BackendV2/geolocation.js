@@ -12,6 +12,7 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 const port = 4009;
+const cors = require('cors');
 
 app.use('/imageUploads', express.static('imageUploads'));
 
@@ -20,6 +21,7 @@ mongoose.connect(atlasUri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connection successful'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
+app.use(cors());
 app.use(express.json());
 
 const storage = multer.diskStorage({
