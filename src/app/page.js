@@ -179,6 +179,15 @@ import { Nabla } from "next/font/google";
 
 export default function Home() {
   return (
+    <>
     <Navbar />
+    <div style={{display:"block",width: "100vw", backgroundColor: "white", height: "90vh"}}>
+        <h1 style={{paddingTop:"20vh",textAlign:"center",color:"black",fontSize:"4rem"}}>Un-GateKeep</h1>
+        <h2 style={{textAlign:"center",color:"black",fontSize:"3rem"}}>Never Get Bitched Again</h2>
+     
+    </div>
+    </>
+
+    
   )
 }
