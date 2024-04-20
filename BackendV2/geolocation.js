@@ -48,7 +48,7 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
 
         const imageId = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
         
-        const imagePath = req.file.path; 
+        const imagePath = req.file.path;
         
         const newImage = await Image.create({
             imagePath: imagePath,
@@ -79,9 +79,23 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
     }
 });
 
+app.get('/images', (req, res) => {
+    const dataFile = 'imageData.json';
+    fs.readFile(dataFile, (err, data) => {
+        if (err) {
+            console.error('Failed to read image data file:', err);
+            return res.status(500).send('Failed to read image data file.');
+        }
+        res.json(JSON.parse(data.toString()));
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
+
+
+
 
 
 
