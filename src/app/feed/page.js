@@ -24,12 +24,20 @@ const images = [
       const newIndex = (prevIndex + 1) % images.length;
       return newIndex;
     });
+        setNumNext(numNext + 1);
+    console.log(numNext);
   };
 
     useEffect(() => {
-        document.addEventListener('scroll', () => {
-        goToNextImage();
-        });
+        // keydown up and down arrow keys
+        const handleKeyDown = (e) => {
+            if(e.key === 'ArrowDown'){
+                goToNextImage();
+            } else if(e.key === 'ArrowUp'){
+                goToPreviousImage();
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown);
     }, []);
 
     const imageClicked = (e) => {
@@ -37,12 +45,37 @@ const images = [
             alert('double clicked');
         }
     }
+    const [touchStart, setTouchStart] = useState(null)
+    const [touchEnd, setTouchEnd] = useState(null)
+
+    // the required distance between touchStart and touchEnd to be detected as a swipe
+    const minSwipeDistance = 50 
+
+    const onTouchStart = (e) => {
+      setTouchEnd(null) // otherwise the swipe is fired even with usual touch events
+      setTouchStart(e.targetTouches[0].clientY)
+    }
+
+const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientY)
+
+const onTouchEnd = () => {
+  if (!touchStart || !touchEnd) return
+  const distance = touchStart - touchEnd
+  const isUpSwipe = distance > minSwipeDistance
+  const isDownSwipe = distance < -minSwipeDistance
+        if(isUpSwipe){
+            goToNextImage();
+        } else if(isDownSwipe){
+            goToPreviousImage();
+        }
+}
+
+const [numNext, setNumNext] = useState(0);
 
 return (
     <div className="container flex flex-col items-center justify-center mx-auto h-screen">
             <h1 className="text-4xl pb-5">Open Challenges</h1>
-        <button className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800" onClick={goToPreviousImage}>Prev</button>
-        <div className="image-container h-3/4">
-        <Image src={images[currentImageIndex]} alt="Slider" width={3024} height={4032} className="object-scale-down max-h-full" onClick={imageClicked}/> </div> <button className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800" onClick={goToNextImage} >Next</button> </div>
+        <div className="image-container h-3/4" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <Image src={images[currentImageIndex]} alt="Slider" width={3024} height={4032} className="object-scale-down max-h-full" onClick={imageClicked}/> </div> </div>
   );
 }
