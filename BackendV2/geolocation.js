@@ -30,6 +30,19 @@ const upload = multer({ storage: storage });
 const testDBPath = './testDB.json'; // Adjust if necessary
 const referenceImages = require(testDBPath);
 
+function getById(id) {
+    return referenceImages.find(image => image.id === id);
+}
+
+app.get('/img/:id', (req, res) => {
+    const image = getById(req.params.id);
+    if (!image) {
+        res.status(404).send('Image not found.');
+    } else {
+        res.json(image);
+    }
+});
+
 app.post('/upload', upload.single('photo'), async (req, res) => {
     if (!req.file) {
         res.status(400).send('No file uploaded.');
@@ -46,13 +59,7 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
         }
 
         // walk through the reference images and find the one with the matching id
-        let referenceImage;
-        for(let i = 0; i < referenceImages.length; i++){
-            if(referenceImages[i].id === req.query.id){
-                referenceImage = referenceImages[i];
-                break;
-            }
-        }
+        const referenceImage = getById(req.query.id);
         if(referenceImage == undefined){
             res.status(400).send('No reference image found with the provided id.');
             return;
