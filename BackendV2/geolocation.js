@@ -9,12 +9,10 @@ const multer = require('multer');
 const { exiftool } = require('exiftool-vendored');
 const path = require('path');
 const fs = require('fs');
-const { PythonShell } = require('python-shell');
 const { areCoordinatesWithinRadius } = require('./distancealgorithm');
 const app = express();
 const port = 4009;
 const {GoogleGenerativeAI} = require('@google/generative-ai');
-let genAI;
 app.use('/imageUploads', express.static('imageUploads'));
 app.use(express.json());
 
@@ -84,6 +82,7 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
         res.json({
             message: "Image processed successfully",
             distanceScore: distanceResult.distanceMiles,
+            similarityScore: parseInt(userImageDescription)
             //similarityScore: similarityResults[0]
         });
     } catch (error) {
