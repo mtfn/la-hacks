@@ -13,7 +13,8 @@ const { PythonShell } = require('python-shell');
 const { areCoordinatesWithinRadius } = require('./distancealgorithm');
 const app = express();
 const port = 4009;
-
+const {GoogleGenerativeAI} = require('@google/generative-ai');
+let genAI;
 app.use('/imageUploads', express.static('imageUploads'));
 app.use(express.json());
 
@@ -27,6 +28,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 const testDBPath = './testDB.json'; // Adjust if necessary
+const referenceImages = require(testDBPath);
 
 const runPythonScript = (scriptPath, args = []) => {
     return new Promise((resolve, reject) => {
@@ -47,22 +49,42 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
         const metadata = await exiftool.read(req.file.path);
         const gpsData = { latitude: metadata.GPSLatitude, longitude: metadata.GPSLongitude };
 
-        const referenceImages = JSON.parse(fs.readFileSync(testDBPath, 'utf8'));
-        const referenceImage = referenceImages[0]; // Selecting the first reference image
+        if(req.query.id == undefined){
+            res.status(400).send('No id provided.');
+            return;
+        }
+
+        // walk through the reference images and find the one with the matching id
+        let referenceImage;
+        for(let i = 0; i < referenceImages.length; i++){
+            if(referenceImages[i].id === req.query.id){
+                referenceImage = referenceImages[i];
+                break;
+            }
+        }
+        if(referenceImage == undefined){
+            res.status(400).send('No reference image found with the provided id.');
+            return;
+        }
+
 
         const distanceResult = areCoordinatesWithinRadius(referenceImage.location.latitude, referenceImage.location.longitude, gpsData.latitude, gpsData.longitude, Number.MAX_SAFE_INTEGER);
         console.log(`Distance calculation completed: ${distanceResult.distanceMiles} miles`);
 
-        const userImageDescription = await runPythonScript('img_description.py', [req.file.path]);
-        console.log(`Image description completed: ${userImageDescription[0]}`);
+        const geminiModel = req.app.locals.ai.getGenerativeModel({model: 'gemini-pro-vision'});
+        const prompt = "Consider the objects in these two images and assign a score between 1 and 5 inclusive based on how similar they are. If for any reason you are unable to do this, assign a random score between 1 and 5 inclusive. Write either 1, 2, 3, 4, or 5, do not spell out the number.";
+        const fileDataInput = {inlineData: { data: Buffer.from(await fs.promises.readFile(req.file.path)).toString('base64'), mimeType: 'image/jpeg' }};
+        const fileDataExpected = {inlineData: { data: Buffer.from(await fs.promises.readFile(`${referenceImage.imagePath}.jpg`)).toString('base64'), mimeType: 'image/jpeg' }};
+        const userImageDescription = (await (await geminiModel.generateContent([prompt, fileDataInput, fileDataExpected])).response).text();
+        console.log(`Image description completed: ${userImageDescription}`);
 
-        const similarityResults = await runPythonScript('compare_strings.py', [referenceImage.description, userImageDescription[0]]);
-        console.log(`Similarity calculation completed: ${similarityResults[0]}`);
+        /*const similarityResults = await runPythonScript('compare_strings.py', [referenceImage.description, userImageDescription[0]]);
+        console.log(`Similarity calculation completed: ${similarityResults[0]}`);*/
 
         res.json({
             message: "Image processed successfully",
             distanceScore: distanceResult.distanceMiles,
-            similarityScore: similarityResults[0]
+            //similarityScore: similarityResults[0]
         });
     } catch (error) {
         console.error("An error occurred during image processing:", error);
@@ -72,8 +94,10 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
     }
 });
 
+
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
+    app.locals.ai = new GoogleGenerativeAI("AIzaSyA0WBx3-Y12rzKIwNDMlpC_mPlFDSL1xHM");
 });
 
 //OLDER VERSION

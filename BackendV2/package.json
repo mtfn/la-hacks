@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.7.1",
     "axios": "^1.6.8",
     "cors": "^2.8.5",
     "exiftool-vendored": "^25.2.0",
