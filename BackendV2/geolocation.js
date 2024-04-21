@@ -28,15 +28,6 @@ const upload = multer({ storage: storage });
 const testDBPath = './testDB.json'; // Adjust if necessary
 const referenceImages = require(testDBPath);
 
-const runPythonScript = (scriptPath, args = []) => {
-    return new Promise((resolve, reject) => {
-        PythonShell.run(scriptPath, { args }, (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-        });
-    });
-};
-
 app.post('/upload', upload.single('photo'), async (req, res) => {
     if (!req.file) {
         res.status(400).send('No file uploaded.');
@@ -91,6 +82,11 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
     } finally {
         await exiftool.end();
     }
+});
+
+app.get('/images', (req, res) => {
+     // This endpoint could be adjusted to return images from testDB.json
+     res.json(referenceImages);
 });
 
 
@@ -186,12 +182,6 @@ app.listen(port, () => {
 //     } finally {
 //         await exiftool.end().catch(console.error);
 //     }
-// });
-
-// app.get('/images', (req, res) => {
-//     // This endpoint could be adjusted to return images from testDB.json
-//     const imagesData = readTestDB();
-//     res.json(imagesData);
 // });
 
 // app.listen(port, () => {
