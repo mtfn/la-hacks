@@ -5,6 +5,7 @@
 
 //WITHOUT CHILD PROCESS
 const express = require('express');
+const cors = require('cors');
 const multer = require('multer');
 const { exiftool } = require('exiftool-vendored');
 const path = require('path');
@@ -15,6 +16,7 @@ const port = 4009;
 const {GoogleGenerativeAI} = require('@google/generative-ai');
 app.use('/imageUploads', express.static('imageUploads'));
 app.use(express.json());
+app.use(cors());
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'imageUploads/'),
