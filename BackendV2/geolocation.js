@@ -6,22 +6,16 @@
 const express = require('express');
 const multer = require('multer');
 const { exiftool } = require('exiftool-vendored');
-const mongoose = require('mongoose');
-const Image = require('./imageModel');
 const path = require('path');
 const fs = require('fs');
+const { PythonShell } = require('python-shell');
+const { areCoordinatesWithinRadius } = require('./distancealgorithm');
 const app = express();
 const port = 4009;
 const cors = require('cors');
 
-app.use('/imageUploads', express.static('imageUploads'));
-
-const atlasUri = 'mongodb+srv://aryamandayal9:J8GqhfuiOyy0sv42@cluster0.lxmoqjm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
-mongoose.connect(atlasUri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connection successful'))
-  .catch((err) => console.error('MongoDB connection error:', err));
-
 app.use(cors());
+app.use('/imageUploads', express.static('imageUploads'));
 app.use(express.json());
 
 const storage = multer.diskStorage({
@@ -35,6 +29,11 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+const testDBPath = './testDB.json'; 
+
+function readTestDB() {
+    return JSON.parse(fs.readFileSync(testDBPath, 'utf8'));
+}
 
 app.post('/upload', upload.single('photo'), async (req, res) => {
     if (!req.file) {
@@ -48,60 +47,56 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
             longitude: metadata.GPSLongitude,
         };
 
-        const imageId = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-        
-        const imagePath = req.file.path;
-        
-        const newImage = await Image.create({
-            imagePath: imagePath,
-            location: gpsData,
-            imageId: imageId
-        });
+        const referenceImages = readTestDB();
+        const referenceImage = referenceImages[0]; // Select desired image from testDB array here
 
-        const dataFile = 'imageData.json';
-        fs.readFile(dataFile, (err, data) => {
-            let images = [];
-            if (!err && data.length) {
-                images = JSON.parse(data.toString());
+        const distanceMiles = areCoordinatesWithinRadius(referenceImage.location.latitude, referenceImage.location.longitude, gpsData.latitude, gpsData.longitude, Number.MAX_SAFE_INTEGER).distanceMiles;
+
+        PythonShell.run('img_description.py', { args: [req.file.path] }, async (err, results) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).send("Failed to generate description for uploaded image.");
             }
-            images.push({ imagePath, location: gpsData, imageId });
-            fs.writeFile(dataFile, JSON.stringify(images, null, 2), err => {
+            const userImageDescription = results[0];
+
+            PythonShell.run('compare_strings.py', { args: [referenceImage.description, userImageDescription] }, async (err, results) => {
                 if (err) {
-                    console.error('Failed to update image data file:', err);
-                    return res.status(500).send('Failed to update image data file.');
+                    console.log(err);
+                    return res.status(500).send("Failed to compare image descriptions.");
                 }
-                res.json({ message: "Image uploaded successfully", imageData: newImage });
+                const similarityScore = results[0];
+
+                const uploadedImageData = {
+                    imagePath: req.file.path.replace(/^imageUploads\//, ''),
+                    location: gpsData,
+                    description: userImageDescription
+                };
+
+                // Store or use uploadedImageData as needed
+                console.log(`Distance: ${distanceMiles} miles, Similarity: ${similarityScore}`);
+
+                res.json({ 
+                    message: "Image processed successfully", 
+                    distanceScore: distanceMiles, 
+                    similarityScore: similarityScore, 
+                    uploadedImage: uploadedImageData
+                });
             });
         });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Failed to extract metadata or save image.');
+        res.status(500).send('Failed to process uploaded image.');
     } finally {
         await exiftool.end().catch(console.error);
     }
 });
 
 app.get('/images', (req, res) => {
-    const dataFile = 'imageData.json';
-    fs.readFile(dataFile, (err, data) => {
-        if (err) {
-            console.error('Failed to read image data file:', err);
-            return res.status(500).send('Failed to read image data file.');
-        }
-        res.json(JSON.parse(data.toString()));
-    });
+    // This endpoint could be adjusted to return images from testDB.json
+    const imagesData = readTestDB();
+    res.json(imagesData);
 });
 
 app.listen(port, () => {
     console.log(`Server listening at http://localhost:${port}`);
 });
-
-
-
-
-
-
-
-
-
-
